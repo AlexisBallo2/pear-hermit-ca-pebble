@@ -430,16 +430,6 @@ static void inbox_received(DictionaryIterator *iter, void *context) {
         }
     }
 
-    t = dict_find(iter, MESSAGE_KEY_ACTIVITY);
-    if (t) {
-        int v = atoi(t->value->cstring);
-        if (v >= 0 && v < NUM_ACTIVITIES) {
-            s_activity = (ActivityType)v;
-            persist_write_int(PERSIST_ACTIVITY, v);
-            update_icon_display();
-        }
-    }
-
     t = dict_find(iter, MESSAGE_KEY_TRACKER_FONT_SIZE);
     if (t) {
         s_large_font = (atoi(t->value->cstring) == 1);

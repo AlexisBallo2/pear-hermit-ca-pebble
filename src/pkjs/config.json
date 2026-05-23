@@ -54,21 +54,6 @@
       },
       {
         "type": "select",
-        "messageKey": "ACTIVITY",
-        "label": "Default Tracker Display",
-        "defaultValue": "0",
-        "options": [
-          { "label": "Step Count",       "value": "0" },
-          { "label": "Time Active",      "value": "1" },
-          { "label": "Calories Burned",  "value": "2" },
-          { "label": "Distance Walked",  "value": "3" },
-          { "label": "Heart Rate",       "value": "4" },
-          { "label": "Battery Charge",   "value": "5" },
-          { "label": "Digital Time",     "value": "6" }
-        ]
-      },
-      {
-        "type": "select",
         "messageKey": "TRACKER_FONT_SIZE",
         "label": "Tracker Text Size",
         "defaultValue": "0",
