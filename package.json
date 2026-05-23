@@ -5,7 +5,7 @@
   "keywords": ["pebble-app"],
   "private": true,
   "dependencies": {
-    "pebble-clay": "^1.0.4"
+    "@rebble/clay": "^1.0.10"
   },
   "pebble": {
     "displayName": "Pear Hermit",
