@@ -54,7 +54,7 @@ static Layer *s_hands_layer;
 static Layer *s_date_border_layer;
 static TextLayer *s_tracker_text_layer;
 static TextLayer *s_date_text_layer;
-static BitmapLayer *s_tracker_icon_layer;
+static Layer *s_tracker_icon_layer;
 
 static GBitmap *s_icons[NUM_ACTIVITIES];
 static GFont s_font_dial;
@@ -139,17 +139,52 @@ static void update_activity_display(void) {
     text_layer_set_text(s_tracker_text_layer, s_tracker_buf);
 }
 
+static void icon_update_proc(Layer *layer, GContext *ctx) {
+    GBitmap *bmp = s_icons[s_activity];
+    if (!bmp) return;
+    GRect bounds = layer_get_bounds(layer);
+    graphics_context_set_compositing_mode(ctx, GCompOpSet);
+    graphics_draw_bitmap_in_rect(ctx, bmp, bounds);
+}
+
 static void update_icon_display(void) {
-    bitmap_layer_set_bitmap(s_tracker_icon_layer, s_icons[s_activity]);
+    layer_mark_dirty(s_tracker_icon_layer);
+}
+
+static void tint_icons(GColor fg, GColor bg) {
+    for (int i = 0; i < NUM_ACTIVITIES; i++) {
+        if (s_icons[i]) gbitmap_destroy(s_icons[i]);
+        s_icons[i] = gbitmap_create_with_resource(ICON_RES_IDS[i]);
+        GBitmap *bmp = s_icons[i];
+        if (!bmp) continue;
+        GColor *palette = gbitmap_get_palette(bmp);
+        if (!palette) continue;
+        int num_colors;
+        switch (gbitmap_get_format(bmp)) {
+            case GBitmapFormat1BitPalette: num_colors = 2; break;
+            case GBitmapFormat2BitPalette: num_colors = 4; break;
+            case GBitmapFormat4BitPalette: num_colors = 16; break;
+            default: num_colors = 0; break;
+        }
+        for (int c = 0; c < num_colors; c++) {
+            if (palette[c].r + palette[c].g + palette[c].b > 0) {
+                palette[c] = fg;
+            } else {
+                palette[c] = bg;
+            }
+        }
+    }
 }
 
 static void apply_colors(void) {
     window_set_background_color(s_window, s_bg_color);
     text_layer_set_text_color(s_tracker_text_layer, s_dial_color);
     text_layer_set_text_color(s_date_text_layer, s_dial_color);
+    tint_icons(s_dial_color, s_bg_color);
     layer_mark_dirty(s_bg_layer);
     layer_mark_dirty(s_hands_layer);
     layer_mark_dirty(s_date_border_layer);
+    layer_mark_dirty(s_tracker_icon_layer);
 }
 
 static void apply_tracker_font(void) {
@@ -474,9 +509,9 @@ static void window_load(Window *window) {
     apply_tracker_font();
     layer_add_child(window_layer, text_layer_get_layer(s_tracker_text_layer));
 
-    s_tracker_icon_layer = bitmap_layer_create(GRect(cx - 10, cy - 40, 20, 20));
-    bitmap_layer_set_compositing_mode(s_tracker_icon_layer, GCompOpSet);
-    layer_add_child(window_layer, bitmap_layer_get_layer(s_tracker_icon_layer));
+    s_tracker_icon_layer = layer_create(GRect(cx - 10, cy - 40, 20, 20));
+    layer_set_update_proc(s_tracker_icon_layer, icon_update_proc);
+    layer_add_child(window_layer, s_tracker_icon_layer);
 
     int date_w = 36;
     int date_h = 24;
@@ -497,9 +532,7 @@ static void window_load(Window *window) {
     layer_set_update_proc(s_hands_layer, hands_update_proc);
     layer_add_child(window_layer, s_hands_layer);
 
-    for (int i = 0; i < NUM_ACTIVITIES; i++) {
-        s_icons[i] = gbitmap_create_with_resource(ICON_RES_IDS[i]);
-    }
+    tint_icons(s_dial_color, s_bg_color);
 
     update_icon_display();
     update_activity_display();
@@ -521,7 +554,7 @@ static void window_unload(Window *window) {
     layer_destroy(s_date_border_layer);
     text_layer_destroy(s_tracker_text_layer);
     text_layer_destroy(s_date_text_layer);
-    bitmap_layer_destroy(s_tracker_icon_layer);
+    layer_destroy(s_tracker_icon_layer);
 
     for (int i = 0; i < NUM_ACTIVITIES; i++) {
         gbitmap_destroy(s_icons[i]);
