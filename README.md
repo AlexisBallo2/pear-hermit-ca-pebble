@@ -1,4 +1,4 @@
-# Pear Hermit
+# Pear Hermit California
 
 An analog watchface for Pebble Time 2 (Emery) with activity tracking and full color customization.
 
@@ -6,10 +6,10 @@ An analog watchface for Pebble Time 2 (Emery) with activity tracking and full co
 
 ## Features
 
-- Analog clock with hour numbers (1-12) in ZenDots font arranged in a rounded-rectangle layout
+- Analog clock with hour numbers (1-12) in San Francisco font arranged in a rounded-rectangle layout
 - Configurable second hand (per-second tick)
 - Two hand rendering modes: opaque (filled) and transparent (outlined)
-- Activity tracker with 7 display types, cycled by shaking the watch:
+- Activity tracker with 7 display types:
   - Step count
   - Active time (H:MM)
   - Calories burned
