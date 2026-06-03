@@ -386,7 +386,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 }
 
 // ----- tap handler -----
-
+/* no tap handler
 static void tap_handler(AccelAxisType axis, int32_t direction) {
     (void)axis;
     (void)direction;
@@ -399,6 +399,7 @@ static void tap_handler(AccelAxisType axis, int32_t direction) {
     update_activity_display();
     update_icon_display();
 }
+*/
 
 // ----- health & battery -----
 
@@ -479,6 +480,11 @@ static void inbox_received(DictionaryIterator *iter, void *context) {
     }
 
     apply_colors();
+    t=dict_find(iter,MESSAGE_KEY_ACTIVITY);
+    if (t) {
+        s_activity=atoi(t->value->cstring);
+        persist_write_int(PERSIST_ACTIVITY, s_activity);
+    }
     update_activity_display();
 
     if (need_tick_update) {
@@ -564,8 +570,8 @@ static void window_unload(Window *window) {
 // ----- init / deinit -----
 
 static void init(void) {
-    s_font_dial = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_ZENDOTS_26));
-    s_font_date = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_ZENDOTS_18));
+    s_font_dial = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_SAN_FRANCISCO_26));
+    s_font_date = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_SAN_FRANCISCO_18));
 
     load_settings();
 
@@ -578,7 +584,7 @@ static void init(void) {
     window_stack_push(s_window, true);
 
     update_tick_subscription();
-    accel_tap_service_subscribe(tap_handler);
+    //accel_tap_service_subscribe(tap_handler);
 
     health_service_events_subscribe(health_handler, NULL);
     s_battery_charge = battery_state_service_peek().charge_percent;
