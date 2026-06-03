@@ -1,41 +1,103 @@
 {
-  "name": "pear-hermit-pebble",
-  "author": "Comfortably Numb",
-  "version": "1.0.0",
-  "keywords": ["pebble-app"],
-  "private": true,
-  "dependencies": {
-    "@rebble/clay": "^1.0.10"
-  },
-  "pebble": {
-    "displayName": "Pear Hermit",
-    "uuid": "f90993ed-8430-4684-9c96-8a30b1bc3584",
-    "sdkVersion": "3",
-    "enableMultiJS": true,
-    "targetPlatforms": ["emery"],
-    "watchapp": { "watchface": true },
-    "capabilities": ["health", "configurable"],
-    "messageKeys": [
-      "BACKGROUND_COLOR",
-      "DIAL_COLOR",
-      "HANDS_COLOR",
-      "TRANSPARENT_HANDS",
-      "SECOND_HAND",
-      "TRACKER_FONT_SIZE",
-      "DISTANCE_UNITS"
+    "author": "townmath",
+    "dependencies": {
+        "@rebble/clay": "^1.0.10"
+    },
+    "keywords": [
+        "pebble-app"
     ],
-    "resources": {
-      "media": [
-        { "type": "font", "name": "FONT_ZENDOTS_26", "file": "fonts/ZenDots-Regular.ttf", "characterRegex": "[0-9]" },
-        { "type": "font", "name": "FONT_ZENDOTS_18", "file": "fonts/ZenDots-Regular.ttf", "characterRegex": "[0-9]" },
-        { "type": "png", "name": "ICON_STEPS",          "file": "icons/steps.png" },
-        { "type": "png", "name": "ICON_ACTIVE_MINUTES",  "file": "icons/activeMinutes.png" },
-        { "type": "png", "name": "ICON_CALORIES",        "file": "icons/calories.png" },
-        { "type": "png", "name": "ICON_DISTANCE",        "file": "icons/distance.png" },
-        { "type": "png", "name": "ICON_HEART_RATE",      "file": "icons/heartRate.png" },
-        { "type": "png", "name": "ICON_BATTERY",         "file": "icons/battery.png" },
-        { "type": "png", "name": "ICON_DIGITAL_TIME",    "file": "icons/digitalTime.png" }
-      ]
-    }
-  }
+    "name": "pear-hermit-ca-pebble",
+    "pebble": {
+        "capabilities": [
+            "configurable",
+            "health"
+        ],
+        "displayName": "Pear Hermit California",
+        "enableMultiJS": true,
+        "messageKeys": [
+            "BACKGROUND_COLOR",
+            "DIAL_COLOR",
+            "HANDS_COLOR",
+            "TRANSPARENT_HANDS",
+            "SECOND_HAND",
+            "TRACKER_FONT_SIZE",
+            "DISTANCE_UNITS",
+            "ACTIVITY"
+        ],
+        "projectType": "native",
+        "resources": {
+            "media": [
+                {
+                    "characterRegex": "[0-9]",
+                    "file": "fonts/ZenDots-Regular.ttf",
+                    "name": "FONT_ZENDOTS_26",
+                    "type": "font"
+                },
+                {
+                    "characterRegex": "[0-9]",
+                    "file": "fonts/ZenDots-Regular.ttf",
+                    "name": "FONT_ZENDOTS_18",
+                    "type": "font"
+                },
+                {
+                    "file": "images/icons/steps.png",
+                    "name": "ICON_STEPS",
+                    "type": "png"
+                },
+                {
+                    "file": "images/icons/activeMinutes.png",
+                    "name": "ICON_ACTIVE_MINUTES",
+                    "type": "png"
+                },
+                {
+                    "file": "images/icons/calories.png",
+                    "name": "ICON_CALORIES",
+                    "type": "png"
+                },
+                {
+                    "file": "images/icons/distance.png",
+                    "name": "ICON_DISTANCE",
+                    "type": "png"
+                },
+                {
+                    "file": "images/icons/heartRate.png",
+                    "name": "ICON_HEART_RATE",
+                    "type": "png"
+                },
+                {
+                    "file": "images/icons/battery.png",
+                    "name": "ICON_BATTERY",
+                    "type": "png"
+                },
+                {
+                    "file": "images/icons/digitalTime.png",
+                    "name": "ICON_DIGITAL_TIME",
+                    "type": "png"
+                },
+                {
+                    "characterRegex": "[0-9]",
+                    "file": "fonts/SanFranciscoDisplay-Bold.otf",
+                    "name": "SAN_FRANCISCO_26",
+                    "targetPlatforms": null,
+                    "type": "font"
+                },
+                {
+                    "characterRegex": "[0-9]",
+                    "file": "fonts/SanFranciscoDisplay-Bold.otf",
+                    "name": "SAN_FRANCISCO_18",
+                    "targetPlatforms": null,
+                    "type": "font"
+                }
+            ]
+        },
+        "sdkVersion": "3",
+        "targetPlatforms": [
+            "emery"
+        ],
+        "uuid": "263fbfcc-e51a-46f7-a78c-fbc8490ed1c6",
+        "watchapp": {
+            "watchface": true
+        }
+    },
+    "version": "1.0.1"
 }
