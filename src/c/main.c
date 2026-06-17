@@ -5,192 +5,34 @@
 #define PERSIST_HANDS_COLOR   3
 #define PERSIST_TRANSPARENT   4
 #define PERSIST_SECOND_HAND   5
-#define PERSIST_ACTIVITY      6
-#define PERSIST_TRACKER_FONT  7
-#define PERSIST_DISTANCE_UNITS 8
-
-#define TAP_DEBOUNCE_SECONDS  2
-
-typedef enum {
-    ACT_STEPS = 0,
-    ACT_ACTIVE_MINUTES,
-    ACT_CALORIES,
-    ACT_DISTANCE,
-    ACT_HEART_RATE,
-    ACT_BATTERY,
-    ACT_DIGITAL_TIME,
-    NUM_ACTIVITIES
-} ActivityType;
-
-static const uint32_t ICON_RES_IDS[] = {
-    RESOURCE_ID_ICON_STEPS,
-    RESOURCE_ID_ICON_ACTIVE_MINUTES,
-    RESOURCE_ID_ICON_CALORIES,
-    RESOURCE_ID_ICON_DISTANCE,
-    RESOURCE_ID_ICON_HEART_RATE,
-    RESOURCE_ID_ICON_BATTERY,
-    RESOURCE_ID_ICON_DIGITAL_TIME,
-};
 
 static GColor s_bg_color;
 static GColor s_dial_color;
 static GColor s_hands_color;
 static bool s_transparent_hands;
 static bool s_second_hand_enabled;
-static ActivityType s_activity;
-static bool s_large_font;
-static bool s_distance_kilometers;
 
 static int s_hours, s_minutes, s_seconds;
-static int s_heart_rate;
-static int s_battery_charge;
-static char s_tracker_buf[16];
 static char s_date_buf[4];
-static time_t s_last_tap_time;
 
 static Window *s_window;
 static Layer *s_bg_layer;
 static Layer *s_hands_layer;
 static Layer *s_date_border_layer;
-static TextLayer *s_tracker_text_layer;
 static TextLayer *s_date_text_layer;
-static Layer *s_tracker_icon_layer;
 
-static GBitmap *s_icons[NUM_ACTIVITIES];
 static GFont s_font_dial;
 static GFont s_font_date;
 
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed);
 
-// ----- helpers -----
-
-static int health_sum_today(HealthMetric metric) {
-    HealthServiceAccessibilityMask mask =
-        health_service_metric_accessible(metric, time_start_of_today(), time(NULL));
-    if (mask & HealthServiceAccessibilityMaskAvailable) {
-        return (int)health_service_sum_today(metric);
-    }
-    return 0;
-}
-
-static void update_activity_display(void) {
-    switch (s_activity) {
-        case ACT_STEPS:
-            snprintf(s_tracker_buf, sizeof(s_tracker_buf), "%d",
-                     health_sum_today(HealthMetricStepCount));
-            break;
-        case ACT_ACTIVE_MINUTES: {
-            int sec = health_sum_today(HealthMetricActiveSeconds);
-            snprintf(s_tracker_buf, sizeof(s_tracker_buf), "%d:%02d",
-                     sec / 3600, (sec % 3600) / 60);
-            break;
-        }
-        case ACT_CALORIES: {
-            int total = health_sum_today(HealthMetricActiveKCalories) +
-                        health_sum_today(HealthMetricRestingKCalories);
-            snprintf(s_tracker_buf, sizeof(s_tracker_buf), "%d", total);
-            break;
-        }
-        case ACT_DISTANCE: {
-            int m = health_sum_today(HealthMetricWalkedDistanceMeters);
-            if (s_distance_kilometers) {
-                int km_tenths = m / 100;
-                snprintf(s_tracker_buf, sizeof(s_tracker_buf), "%d.%d km",
-                         km_tenths / 10, km_tenths % 10);
-            } else {
-                int mi_tenths = (m * 10) / 1609;
-                snprintf(s_tracker_buf, sizeof(s_tracker_buf), "%d.%d mi",
-                         mi_tenths / 10, mi_tenths % 10);
-            }
-            break;
-        }
-        case ACT_HEART_RATE: {
-            HealthServiceAccessibilityMask hr_mask =
-                health_service_metric_accessible(HealthMetricHeartRateBPM,
-                                                  time(NULL) - 120, time(NULL));
-            if (hr_mask & HealthServiceAccessibilityMaskAvailable) {
-                s_heart_rate = (int)health_service_peek_current_value(HealthMetricHeartRateBPM);
-            }
-            if (s_heart_rate > 0) {
-                snprintf(s_tracker_buf, sizeof(s_tracker_buf), "%d", s_heart_rate);
-            } else {
-                snprintf(s_tracker_buf, sizeof(s_tracker_buf), "...");
-            }
-            break;
-        }
-        case ACT_BATTERY:
-            snprintf(s_tracker_buf, sizeof(s_tracker_buf), "%d%%", s_battery_charge);
-            break;
-        case ACT_DIGITAL_TIME: {
-            time_t now = time(NULL);
-            struct tm *t = localtime(&now);
-            if (clock_is_24h_style()) {
-                strftime(s_tracker_buf, sizeof(s_tracker_buf), "%H:%M", t);
-            } else {
-                strftime(s_tracker_buf, sizeof(s_tracker_buf), "%l:%M %p", t);
-            }
-            break;
-        }
-        default:
-            s_tracker_buf[0] = '\0';
-            break;
-    }
-    text_layer_set_text(s_tracker_text_layer, s_tracker_buf);
-}
-
-static void icon_update_proc(Layer *layer, GContext *ctx) {
-    GBitmap *bmp = s_icons[s_activity];
-    if (!bmp) return;
-    GRect bounds = layer_get_bounds(layer);
-    graphics_context_set_compositing_mode(ctx, GCompOpSet);
-    graphics_draw_bitmap_in_rect(ctx, bmp, bounds);
-}
-
-static void update_icon_display(void) {
-    layer_mark_dirty(s_tracker_icon_layer);
-}
-
-static void tint_icons(GColor fg, GColor bg) {
-    for (int i = 0; i < NUM_ACTIVITIES; i++) {
-        if (s_icons[i]) gbitmap_destroy(s_icons[i]);
-        s_icons[i] = gbitmap_create_with_resource(ICON_RES_IDS[i]);
-        GBitmap *bmp = s_icons[i];
-        if (!bmp) continue;
-        GColor *palette = gbitmap_get_palette(bmp);
-        if (!palette) continue;
-        int num_colors;
-        switch (gbitmap_get_format(bmp)) {
-            case GBitmapFormat1BitPalette: num_colors = 2; break;
-            case GBitmapFormat2BitPalette: num_colors = 4; break;
-            case GBitmapFormat4BitPalette: num_colors = 16; break;
-            default: num_colors = 0; break;
-        }
-        for (int c = 0; c < num_colors; c++) {
-            if (palette[c].r + palette[c].g + palette[c].b > 0) {
-                palette[c] = fg;
-            } else {
-                palette[c] = bg;
-            }
-        }
-    }
-}
-
 static void apply_colors(void) {
     window_set_background_color(s_window, s_bg_color);
-    text_layer_set_text_color(s_tracker_text_layer, s_dial_color);
     text_layer_set_text_color(s_date_text_layer, s_dial_color);
-    tint_icons(s_dial_color, s_bg_color);
     layer_mark_dirty(s_bg_layer);
     layer_mark_dirty(s_hands_layer);
     layer_mark_dirty(s_date_border_layer);
-    layer_mark_dirty(s_tracker_icon_layer);
-}
-
-static void apply_tracker_font(void) {
-    text_layer_set_font(s_tracker_text_layer,
-        fonts_get_system_font(s_large_font ?
-            FONT_KEY_GOTHIC_28_BOLD : FONT_KEY_GOTHIC_24_BOLD));
 }
 
 // ----- settings persistence -----
@@ -206,13 +48,6 @@ static void load_settings(void) {
         (persist_read_int(PERSIST_TRANSPARENT) != 0) : false;
     s_second_hand_enabled = persist_exists(PERSIST_SECOND_HAND) ?
         (persist_read_int(PERSIST_SECOND_HAND) != 0) : true;
-    s_activity = persist_exists(PERSIST_ACTIVITY) ?
-        (ActivityType)persist_read_int(PERSIST_ACTIVITY) : ACT_STEPS;
-    s_large_font = persist_exists(PERSIST_TRACKER_FONT) ?
-        (persist_read_int(PERSIST_TRACKER_FONT) != 0) : false;
-    s_distance_kilometers = persist_exists(PERSIST_DISTANCE_UNITS) ?
-        (persist_read_int(PERSIST_DISTANCE_UNITS) != 0) : false;
-    if (s_activity >= NUM_ACTIVITIES) s_activity = ACT_STEPS;
 }
 
 // ----- drawing -----
@@ -378,52 +213,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
         text_layer_set_text(s_date_text_layer, s_date_buf);
     }
 
-    if (units_changed & MINUTE_UNIT) {
-        update_activity_display();
-    }
-
     layer_mark_dirty(s_hands_layer);
-}
-
-// ----- tap handler -----
-/* no tap handler
-static void tap_handler(AccelAxisType axis, int32_t direction) {
-    (void)axis;
-    (void)direction;
-    time_t now = time(NULL);
-    if (now - s_last_tap_time < TAP_DEBOUNCE_SECONDS) return;
-    s_last_tap_time = now;
-
-    s_activity = (s_activity + 1) % NUM_ACTIVITIES;
-    persist_write_int(PERSIST_ACTIVITY, s_activity);
-    update_activity_display();
-    update_icon_display();
-}
-*/
-
-// ----- health & battery -----
-
-static void health_handler(HealthEventType event, void *context) {
-    if (event == HealthEventHeartRateUpdate) {
-        HealthServiceAccessibilityMask mask =
-            health_service_metric_accessible(HealthMetricHeartRateBPM,
-                                              time(NULL) - 120, time(NULL));
-        if (mask & HealthServiceAccessibilityMaskAvailable) {
-            s_heart_rate = (int)health_service_peek_current_value(HealthMetricHeartRateBPM);
-        }
-    }
-    if (s_activity == ACT_HEART_RATE || s_activity == ACT_STEPS ||
-        s_activity == ACT_ACTIVE_MINUTES || s_activity == ACT_CALORIES ||
-        s_activity == ACT_DISTANCE) {
-        update_activity_display();
-    }
-}
-
-static void battery_handler(BatteryChargeState charge) {
-    s_battery_charge = charge.charge_percent;
-    if (s_activity == ACT_BATTERY) {
-        update_activity_display();
-    }
 }
 
 // ----- AppMessage -----
@@ -466,26 +256,7 @@ static void inbox_received(DictionaryIterator *iter, void *context) {
         }
     }
 
-    t = dict_find(iter, MESSAGE_KEY_TRACKER_FONT_SIZE);
-    if (t) {
-        s_large_font = (atoi(t->value->cstring) == 1);
-        persist_write_int(PERSIST_TRACKER_FONT, s_large_font ? 1 : 0);
-        apply_tracker_font();
-    }
-
-    t = dict_find(iter, MESSAGE_KEY_DISTANCE_UNITS);
-    if (t) {
-        s_distance_kilometers = (atoi(t->value->cstring) == 1);
-        persist_write_int(PERSIST_DISTANCE_UNITS, s_distance_kilometers ? 1 : 0);
-    }
-
     apply_colors();
-    t=dict_find(iter,MESSAGE_KEY_ACTIVITY);
-    if (t) {
-        s_activity=atoi(t->value->cstring);
-        persist_write_int(PERSIST_ACTIVITY, s_activity);
-    }
-    update_activity_display();
 
     if (need_tick_update) {
         update_tick_subscription();
@@ -508,17 +279,6 @@ static void window_load(Window *window) {
     layer_set_update_proc(s_bg_layer, bg_update_proc);
     layer_add_child(window_layer, s_bg_layer);
 
-    s_tracker_text_layer = text_layer_create(GRect(0, cy - 68, bounds.size.w, 32));
-    text_layer_set_background_color(s_tracker_text_layer, GColorClear);
-    text_layer_set_text_color(s_tracker_text_layer, s_dial_color);
-    text_layer_set_text_alignment(s_tracker_text_layer, GTextAlignmentCenter);
-    apply_tracker_font();
-    layer_add_child(window_layer, text_layer_get_layer(s_tracker_text_layer));
-
-    s_tracker_icon_layer = layer_create(GRect(cx - 10, cy - 40, 20, 20));
-    layer_set_update_proc(s_tracker_icon_layer, icon_update_proc);
-    layer_add_child(window_layer, s_tracker_icon_layer);
-
     int date_w = 36;
     int date_h = 24;
     int date_y = cy + 48;
@@ -538,11 +298,6 @@ static void window_load(Window *window) {
     layer_set_update_proc(s_hands_layer, hands_update_proc);
     layer_add_child(window_layer, s_hands_layer);
 
-    tint_icons(s_dial_color, s_bg_color);
-
-    update_icon_display();
-    update_activity_display();
-
     time_t now = time(NULL);
     struct tm *t = localtime(&now);
     s_hours = t->tm_hour;
@@ -558,13 +313,7 @@ static void window_unload(Window *window) {
     layer_destroy(s_bg_layer);
     layer_destroy(s_hands_layer);
     layer_destroy(s_date_border_layer);
-    text_layer_destroy(s_tracker_text_layer);
     text_layer_destroy(s_date_text_layer);
-    layer_destroy(s_tracker_icon_layer);
-
-    for (int i = 0; i < NUM_ACTIVITIES; i++) {
-        gbitmap_destroy(s_icons[i]);
-    }
 }
 
 // ----- init / deinit -----
@@ -584,11 +333,6 @@ static void init(void) {
     window_stack_push(s_window, true);
 
     update_tick_subscription();
-    //accel_tap_service_subscribe(tap_handler);
-
-    health_service_events_subscribe(health_handler, NULL);
-    s_battery_charge = battery_state_service_peek().charge_percent;
-    battery_state_service_subscribe(battery_handler);
 
     app_message_register_inbox_received(inbox_received);
     app_message_register_inbox_dropped(inbox_dropped);
@@ -597,9 +341,6 @@ static void init(void) {
 
 static void deinit(void) {
     tick_timer_service_unsubscribe();
-    accel_tap_service_unsubscribe();
-    health_service_events_unsubscribe();
-    battery_state_service_unsubscribe();
 
     fonts_unload_custom_font(s_font_dial);
     fonts_unload_custom_font(s_font_date);

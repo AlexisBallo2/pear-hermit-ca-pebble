@@ -9,8 +9,7 @@
     "name": "pear-hermit-ca-pebble",
     "pebble": {
         "capabilities": [
-            "configurable",
-            "health"
+            "configurable"
         ],
         "displayName": "Pear Hermit California",
         "enableMultiJS": true,
@@ -19,10 +18,7 @@
             "DIAL_COLOR",
             "HANDS_COLOR",
             "TRANSPARENT_HANDS",
-            "SECOND_HAND",
-            "TRACKER_FONT_SIZE",
-            "DISTANCE_UNITS",
-            "ACTIVITY"
+            "SECOND_HAND"
         ],
         "projectType": "native",
         "resources": {
@@ -38,41 +34,6 @@
                     "file": "fonts/ZenDots-Regular.ttf",
                     "name": "FONT_ZENDOTS_18",
                     "type": "font"
-                },
-                {
-                    "file": "images/icons/steps.png",
-                    "name": "ICON_STEPS",
-                    "type": "png"
-                },
-                {
-                    "file": "images/icons/activeMinutes.png",
-                    "name": "ICON_ACTIVE_MINUTES",
-                    "type": "png"
-                },
-                {
-                    "file": "images/icons/calories.png",
-                    "name": "ICON_CALORIES",
-                    "type": "png"
-                },
-                {
-                    "file": "images/icons/distance.png",
-                    "name": "ICON_DISTANCE",
-                    "type": "png"
-                },
-                {
-                    "file": "images/icons/heartRate.png",
-                    "name": "ICON_HEART_RATE",
-                    "type": "png"
-                },
-                {
-                    "file": "images/icons/battery.png",
-                    "name": "ICON_BATTERY",
-                    "type": "png"
-                },
-                {
-                    "file": "images/icons/digitalTime.png",
-                    "name": "ICON_DIGITAL_TIME",
-                    "type": "png"
                 },
                 {
                     "characterRegex": "[0-9]",

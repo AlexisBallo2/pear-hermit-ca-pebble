@@ -51,41 +51,6 @@
         "messageKey": "SECOND_HAND",
         "label": "Show Second Hand",
         "defaultValue": true
-      },
-      {
-        "type": "select",
-        "messageKey": "TRACKER_FONT_SIZE",
-        "label": "Tracker Text Size",
-        "defaultValue": "0",
-        "options": [
-          { "label": "Normal", "value": "0" },
-          { "label": "Large",  "value": "1" }
-        ]
-      },
-      {
-        "type": "select",
-        "messageKey": "DISTANCE_UNITS",
-        "label": "Distance Units",
-        "defaultValue": "0",
-        "options": [
-          { "label": "Miles",      "value": "0" },
-          { "label": "Kilometers", "value": "1" }
-        ]
-      },
-      {
-        "type": "select",
-        "messageKey": "ACTIVITY",
-        "label": "Activity Type",
-        "defaultValue": "0",
-        "options": [
-          { "label": "Steps",      "value": "0" },
-          { "label": "Active Minutes", "value": "1" },
-          { "label": "Calories", "value": "2" },
-          { "label": "Distance", "value": "3" },
-          { "label": "Heart Rate", "value": "4" },
-          { "label": "Battery", "value": "5" },
-          { "label": "Digital Time", "value": "6" }
-        ]
       }
     ]
   },
