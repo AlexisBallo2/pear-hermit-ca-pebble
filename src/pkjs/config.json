@@ -20,7 +20,7 @@
       {
         "type": "color",
         "messageKey": "DIAL_COLOR",
-        "label": "Dial / Second Hand Color",
+        "label": "Dial Color",
         "defaultValue": "FFFFFF",
         "sunlight": false
       },
@@ -45,12 +45,6 @@
         "messageKey": "TRANSPARENT_HANDS",
         "label": "Transparent Hour/Minute Hands",
         "defaultValue": false
-      },
-      {
-        "type": "toggle",
-        "messageKey": "SECOND_HAND",
-        "label": "Show Second Hand",
-        "defaultValue": true
       }
     ]
   },

@@ -4,15 +4,13 @@
 #define PERSIST_DIAL_COLOR    2
 #define PERSIST_HANDS_COLOR   3
 #define PERSIST_TRANSPARENT   4
-#define PERSIST_SECOND_HAND   5
 
 static GColor s_bg_color;
 static GColor s_dial_color;
 static GColor s_hands_color;
 static bool s_transparent_hands;
-static bool s_second_hand_enabled;
 
-static int s_hours, s_minutes, s_seconds;
+static int s_hours, s_minutes;
 static char s_date_buf[4];
 
 static Window *s_window;
@@ -46,8 +44,6 @@ static void load_settings(void) {
         (GColor){ .argb = (uint8_t)persist_read_int(PERSIST_HANDS_COLOR) } : GColorRed;
     s_transparent_hands = persist_exists(PERSIST_TRANSPARENT) ?
         (persist_read_int(PERSIST_TRANSPARENT) != 0) : false;
-    s_second_hand_enabled = persist_exists(PERSIST_SECOND_HAND) ?
-        (persist_read_int(PERSIST_SECOND_HAND) != 0) : true;
 }
 
 // ----- drawing -----
@@ -152,10 +148,9 @@ static void hands_update_proc(Layer *layer, GContext *ctx) {
     GRect bounds = layer_get_bounds(layer);
     GPoint center = GPoint(bounds.size.w / 2, bounds.size.h / 2);
 
-    int32_t hour_total = (s_hours % 12) * 3600 + s_minutes * 60 + s_seconds;
+    int32_t hour_total = (s_hours % 12) * 3600 + s_minutes * 60;
     int32_t hour_angle = (int32_t)((int64_t)TRIG_MAX_ANGLE * hour_total / 43200);
-    int32_t min_total = s_minutes * 60 + s_seconds;
-    int32_t min_angle = (int32_t)((int64_t)TRIG_MAX_ANGLE * min_total / 3600);
+    int32_t min_angle = TRIG_MAX_ANGLE * s_minutes / 60;
 
     if (s_transparent_hands) {
         draw_transparent_hand(ctx, center, hour_angle, 4, -54, -18);
@@ -167,18 +162,6 @@ static void hands_update_proc(Layer *layer, GContext *ctx) {
 
     draw_root_line(ctx, center, hour_angle, 14, s_hands_color);
     draw_root_line(ctx, center, min_angle,  14, s_hands_color);
-
-    if (s_second_hand_enabled) {
-        int32_t sec_angle = TRIG_MAX_ANGLE * s_seconds / 60;
-
-        GPoint sec_tip, sec_tail;
-        rotate_point(center, 0, -77, sec_angle, &sec_tip);
-        rotate_point(center, 0,  14, sec_angle, &sec_tail);
-
-        graphics_context_set_stroke_color(ctx, s_dial_color);
-        graphics_context_set_stroke_width(ctx, 1);
-        graphics_draw_line(ctx, sec_tip, sec_tail);
-    }
 
     graphics_context_set_fill_color(ctx, s_hands_color);
     graphics_fill_circle(ctx, center, 5);
@@ -199,14 +182,12 @@ static void date_border_update_proc(Layer *layer, GContext *ctx) {
 
 static void update_tick_subscription(void) {
     tick_timer_service_unsubscribe();
-    tick_timer_service_subscribe(
-        s_second_hand_enabled ? SECOND_UNIT : MINUTE_UNIT, tick_handler);
+    tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     s_hours = tick_time->tm_hour;
     s_minutes = tick_time->tm_min;
-    s_seconds = tick_time->tm_sec;
 
     if (units_changed & DAY_UNIT) {
         snprintf(s_date_buf, sizeof(s_date_buf), "%02d", tick_time->tm_mday);
@@ -220,7 +201,6 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 static void inbox_received(DictionaryIterator *iter, void *context) {
     Tuple *t;
-    bool need_tick_update = false;
 
     t = dict_find(iter, MESSAGE_KEY_BACKGROUND_COLOR);
     if (t) {
@@ -246,21 +226,7 @@ static void inbox_received(DictionaryIterator *iter, void *context) {
         persist_write_int(PERSIST_TRANSPARENT, s_transparent_hands ? 1 : 0);
     }
 
-    t = dict_find(iter, MESSAGE_KEY_SECOND_HAND);
-    if (t) {
-        bool new_val = (t->value->int32 != 0);
-        if (new_val != s_second_hand_enabled) {
-            s_second_hand_enabled = new_val;
-            persist_write_int(PERSIST_SECOND_HAND, s_second_hand_enabled ? 1 : 0);
-            need_tick_update = true;
-        }
-    }
-
     apply_colors();
-
-    if (need_tick_update) {
-        update_tick_subscription();
-    }
 }
 
 static void inbox_dropped(AppMessageResult reason, void *context) {
@@ -302,7 +268,6 @@ static void window_load(Window *window) {
     struct tm *t = localtime(&now);
     s_hours = t->tm_hour;
     s_minutes = t->tm_min;
-    s_seconds = t->tm_sec;
     snprintf(s_date_buf, sizeof(s_date_buf), "%02d", t->tm_mday);
     text_layer_set_text(s_date_text_layer, s_date_buf);
 

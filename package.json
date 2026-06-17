@@ -17,8 +17,7 @@
             "BACKGROUND_COLOR",
             "DIAL_COLOR",
             "HANDS_COLOR",
-            "TRANSPARENT_HANDS",
-            "SECOND_HAND"
+            "TRANSPARENT_HANDS"
         ],
         "projectType": "native",
         "resources": {

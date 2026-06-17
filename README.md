@@ -7,15 +7,13 @@ An analog watchface for Pebble Time 2 (Emery) with full color customization.
 ## Features
 
 - Analog clock with hour numbers (1-12) in San Francisco font arranged in a rounded-rectangle layout
-- Configurable second hand (per-second tick)
 - Two hand rendering modes: opaque (filled) and transparent (outlined)
 - Date display in a bordered box
 - Fully configurable via phone settings (Clay):
   - Background color (64-color palette)
-  - Dial / second hand color
+  - Dial color
   - Hour/minute hands color
   - Transparent hands toggle
-  - Second hand toggle
 - All settings persist across reboots
 
 ## Building
